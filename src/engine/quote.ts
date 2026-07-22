@@ -119,12 +119,13 @@ export function quote(input: QuoteInput): QuoteResult {
     cents: yuan(bagUnit) * quantity,
   })
 
-  // 异形工艺:制袋费基础上叠加
+  // 异形工艺:制袋费基础上叠加,普通袋系60/八边封90
   if (input.shaped) {
+    const shapedUnit = RULES.shaped[family]
     lines.push({
       label: '异形',
-      detail: `${RULES.shaped.price}元/个 × ${quantity}`,
-      cents: yuan(RULES.shaped.price) * quantity,
+      detail: `${shapedUnit}元/个 × ${quantity}`,
+      cents: yuan(shapedUnit) * quantity,
     })
   }
 

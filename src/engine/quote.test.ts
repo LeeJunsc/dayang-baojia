@@ -77,14 +77,15 @@ describe('复合制袋费与异形叠加', () => {
     expect(line.cents).toBe(unit * 10 * 100)
   })
 
-  it('异形工艺 +30元/个,与制袋费叠加', () => {
+  it('异形工艺叠加:普通袋系+60元/个,八边封+90元/个', () => {
+    // 普通袋系:制袋30 + 异形60 = 90元/个
     const r = quote(base({ shaped: true, quantity: 10 }))
     expect(r.lines.find((l) => l.label === '复合制袋费')!.cents).toBe(30 * 10 * 100)
-    expect(r.lines.find((l) => l.label === '异形')!.cents).toBe(30 * 10 * 100)
-    // 八边封 + 异形 = 60 + 30
+    expect(r.lines.find((l) => l.label === '异形')!.cents).toBe(60 * 10 * 100)
+    // 八边封:制袋60 + 异形90 = 150元/个
     const r8 = quote(base({ bagType: '八边封袋', gussetCm: 8, shaped: true, quantity: 10 }))
     expect(r8.lines.find((l) => l.label === '复合制袋费')!.cents).toBe(60 * 10 * 100)
-    expect(r8.lines.find((l) => l.label === '异形')!.cents).toBe(30 * 10 * 100)
+    expect(r8.lines.find((l) => l.label === '异形')!.cents).toBe(90 * 10 * 100)
   })
 
   it('不选异形则无异形费用行', () => {
@@ -169,9 +170,9 @@ describe('数量折扣档(15×20三边封,单袋印刷36元,非特小袋)', () =
   it('折扣作用于全部费用(印刷+制袋+异形+开窗+加价项)', () => {
     // 八边封 16×24+8,qty20,异形+开窗+不一致+拉链+嘴+气阀
     // 面积1280cm²=0.128㎡ → 印刷 600×0.128×20 = 1536
-    // 制袋 60×20=1200;异形 30×20=600;开窗 90×20=1800;不一致 80×20=1600
+    // 制袋 60×20=1200;异形 90×20=1800;开窗 90×20=1800;不一致 80×20=1600
     // 拉链 0;嘴 25×20=500;气阀 10×20=200
-    // 小计 7436 × 0.7 = 5205.2 → 5205
+    // 小计 8636 × 0.7 = 6045.2 → 6045
     const r = quote(
       base({
         bagType: '八边封袋',
@@ -188,9 +189,9 @@ describe('数量折扣档(15×20三边封,单袋印刷36元,非特小袋)', () =
         valve: true,
       }),
     )
-    expect(r.subtotalCents).toBe(7436_00)
+    expect(r.subtotalCents).toBe(8636_00)
     expect(r.discountRate).toBe(0.7)
-    expect(r.totalYuan).toBe(5205)
+    expect(r.totalYuan).toBe(6045)
   })
 
   it('非特小袋(单袋印刷≥11元)触发低消仍正常打折', () => {
@@ -234,7 +235,7 @@ describe('金额取整:折后四舍五入到元', () => {
   it('348.48 → 348', () => {
     expect(quote(base({ widthCm: 10, heightCm: 8, quantity: 11 })).totalYuan).toBe(348)
   })
-  it('5205.2 → 5205', () => {
+  it('6045.2 → 6045', () => {
     const r = quote(
       base({
         bagType: '八边封袋',
@@ -250,7 +251,7 @@ describe('金额取整:折后四舍五入到元', () => {
         valve: true,
       }),
     )
-    expect(r.totalYuan).toBe(5205)
+    expect(r.totalYuan).toBe(6045)
   })
 })
 

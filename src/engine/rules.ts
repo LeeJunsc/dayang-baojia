@@ -42,8 +42,8 @@ export const RULES = {
     八边封袋: 60,
   } as Record<BagType, number>,
 
-  /** 异形工艺:在制袋费基础上叠加(元/个),尺寸按外接矩形计 */
-  shaped: { price: 30 },
+  /** 异形工艺:在制袋费基础上叠加(元/个),按袋型家族;尺寸按外接矩形计 */
+  shaped: { normal: 60, eightSide: 90 } as Record<BagFamily, number>,
 
   /** 牛皮纸开窗(元/个),按袋型家族 */
   window: { normal: 60, eightSide: 90 } as Record<BagFamily, number>,
