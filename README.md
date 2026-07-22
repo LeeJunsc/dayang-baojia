@@ -2,6 +2,10 @@
 
 复合袋打样报价工具,网页版(移动优先)。报价规则见 [规划.md](规划.md)。
 
+**线上地址:https://leejunsc.github.io/dayang-baojia/**
+
+改价或改界面后,运行 `bash scripts/deploy.sh` 一键重新发布(自动跑测试→构建→推送,约1分钟生效)。
+
 ## 目录结构
 
 - `src/engine/rules.ts` — **所有价格规则配置**(单价、折扣档、低消、面积公式)。改价只动这个文件。
