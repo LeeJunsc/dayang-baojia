@@ -3,21 +3,23 @@ import { computed, ref } from 'vue'
 import { QuoteInputError, fmtCents, quote } from './engine/quote'
 import type { BagType, QuoteInput, QuoteResult, Surface } from './engine/quote'
 import { buildQuoteText } from './engine/quoteText'
-import { BAG_FAMILY } from './engine/rules'
+import { GUSSET_KIND, RULES } from './engine/rules'
 
-const bagTypes: BagType[] = ['普通袋', '异型普通袋', '八边封袋', '异型八边封']
+const bagTypes: BagType[] = ['三边封袋', '自立袋', '风琴袋', '中封袋', '八边封袋']
 const surfaces: Surface[] = ['亮面', '哑面']
 
 function newItem(): QuoteInput {
   return {
-    bagType: '普通袋',
+    bagType: '三边封袋',
     widthCm: 15,
     heightCm: 20,
     gussetCm: 0,
     quantity: 1,
     surface: '哑面',
+    shaped: false,
     window: false,
     windowSurface: '哑面',
+    zipper: false,
     spout: false,
     valve: false,
   }
@@ -42,8 +44,22 @@ const grandTotal = computed(() =>
   results.value.reduce((s, r) => (r.ok ? s + r.result.totalYuan : s), 0),
 )
 
+function hasGusset(item: QuoteInput): boolean {
+  return GUSSET_KIND[item.bagType] !== 'none'
+}
+
 function gussetLabel(item: QuoteInput): string {
-  return BAG_FAMILY[item.bagType] === 'normal' ? '底风琴' : '侧风琴'
+  return GUSSET_KIND[item.bagType] === 'bottom' ? '底风琴' : '侧风琴'
+}
+
+function zipperAllowed(item: QuoteInput): boolean {
+  return RULES.zipper.allowed.includes(item.bagType)
+}
+
+function setBagType(item: QuoteInput, t: BagType) {
+  item.bagType = t
+  if (!hasGusset(item)) item.gussetCm = 0
+  if (!zipperAllowed(item)) item.zipper = false
 }
 
 function toggleWindow(item: QuoteInput) {
@@ -118,12 +134,12 @@ async function copyQuote() {
 
         <div class="field">
           <label class="field-label">袋型</label>
-          <div class="seg grid4">
+          <div class="seg grid3">
             <button
               v-for="t in bagTypes"
               :key="t"
               :class="{ on: item.bagType === t }"
-              @click="item.bagType = t"
+              @click="setBagType(item, t)"
             >
               {{ t }}
             </button>
@@ -133,7 +149,7 @@ async function copyQuote() {
         <div class="field">
           <label class="field-label">
             尺寸 cm
-            <span v-if="item.bagType.startsWith('异型')" class="field-hint">异型袋填外接矩形尺寸</span>
+            <span v-if="item.shaped" class="field-hint">异形填外接矩形尺寸</span>
           </label>
           <div class="dims">
             <div class="dim">
@@ -145,11 +161,13 @@ async function copyQuote() {
               <input v-model.number="item.heightCm" type="number" inputmode="decimal" min="0" />
               <span>高</span>
             </div>
-            <span class="dim-x">+</span>
-            <div class="dim">
-              <input v-model.number="item.gussetCm" type="number" inputmode="decimal" min="0" />
-              <span>{{ gussetLabel(item) }}</span>
-            </div>
+            <template v-if="hasGusset(item)">
+              <span class="dim-x">+</span>
+              <div class="dim">
+                <input v-model.number="item.gussetCm" type="number" inputmode="decimal" min="0" />
+                <span>{{ gussetLabel(item) }}</span>
+              </div>
+            </template>
           </div>
         </div>
 
@@ -170,8 +188,19 @@ async function copyQuote() {
         <div class="field">
           <label class="field-label">工艺</label>
           <div class="chips">
+            <button class="chip" :class="{ on: item.shaped }" @click="item.shaped = !item.shaped">
+              异形
+            </button>
             <button class="chip" :class="{ on: item.window }" @click="toggleWindow(item)">
               牛皮纸开窗
+            </button>
+            <button
+              v-if="zipperAllowed(item)"
+              class="chip"
+              :class="{ on: item.zipper }"
+              @click="item.zipper = !item.zipper"
+            >
+              拉链
             </button>
             <button class="chip" :class="{ on: item.spout }" @click="item.spout = !item.spout">
               嘴
@@ -352,9 +381,9 @@ async function copyQuote() {
   font-weight: 600;
 }
 
-.seg.grid4 {
+.seg.grid3 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
 .seg.small button {

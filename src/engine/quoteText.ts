@@ -17,9 +17,11 @@ function sizeText(input: QuoteInput): string {
 
 function craftText(input: QuoteInput): string {
   const parts: string[] = [input.surface]
+  if (input.shaped) parts.push('异形')
   if (input.window) {
     parts.push(input.windowSurface === input.surface ? '开窗' : `开窗(${input.windowSurface})`)
   }
+  if (input.zipper) parts.push('拉链')
   if (input.spout) parts.push('嘴')
   if (input.valve) parts.push('气阀')
   return parts.join(' / ')

@@ -9,20 +9,24 @@ export type { BagType, Surface }
 
 export interface QuoteInput {
   bagType: BagType
-  /** 宽 cm(异型为外接矩形宽) */
+  /** 宽 cm(异形时为外接矩形宽) */
   widthCm: number
   /** 高 cm */
   heightCm: number
-  /** 普通袋系=底风琴(可为0);八边封系=侧风琴 */
+  /** 自立袋=底风琴;风琴袋/八边封袋=侧风琴;三边封袋/中封袋不使用 */
   gussetCm: number
   /** 单款数量 */
   quantity: number
   /** 袋子整体表面 */
   surface: Surface
+  /** 异形工艺(价格叠加,尺寸按外接矩形) */
+  shaped: boolean
   /** 牛皮纸开窗 */
   window: boolean
   /** 开窗处表面(仅开窗时有效) */
   windowSurface: Surface
+  /** 拉链(不另加价,仅限规则允许的袋型) */
+  zipper: boolean
   /** 嘴 */
   spout: boolean
   /** 气阀 */
@@ -75,6 +79,9 @@ function assertInput(input: QuoteInput): void {
   if (!Number.isInteger(quantity) || quantity < 1) {
     throw new QuoteInputError('数量必须是不小于1的整数')
   }
+  if (input.zipper && !RULES.zipper.allowed.includes(input.bagType)) {
+    throw new QuoteInputError(`${input.bagType}不支持拉链`)
+  }
 }
 
 /** 元 → 分(规则表中的单价都是整数元,直接乘100) */
@@ -112,6 +119,15 @@ export function quote(input: QuoteInput): QuoteResult {
     cents: yuan(bagUnit) * quantity,
   })
 
+  // 异形工艺:制袋费基础上叠加
+  if (input.shaped) {
+    lines.push({
+      label: '异形',
+      detail: `${RULES.shaped.price}元/个 × ${quantity}`,
+      cents: yuan(RULES.shaped.price) * quantity,
+    })
+  }
+
   // 牛皮纸开窗 + 开窗处表面不一致加价
   if (input.window) {
     const windowUnit = RULES.window[family]
@@ -127,6 +143,15 @@ export function quote(input: QuoteInput): QuoteResult {
         cents: yuan(RULES.surfaceMismatch) * quantity,
       })
     }
+  }
+
+  // 拉链:不另加价,明细中体现
+  if (input.zipper) {
+    lines.push({
+      label: '拉链',
+      detail: '不另加价',
+      cents: yuan(RULES.zipper.price) * quantity,
+    })
   }
 
   // 嘴:不足最低数量按最低数量计费

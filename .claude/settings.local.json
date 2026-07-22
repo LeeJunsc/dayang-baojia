@@ -14,7 +14,9 @@
       "Bash(gh repo *)",
       "Bash(curl -s https://leejunsc.github.io/dayang-baojia/)",
       "Bash(curl -s -o /dev/null -w 'js: %{http_code} %{size_download}B\\\\n' https://leejunsc.github.io/dayang-baojia/assets/index-LZmIcZ8J.js)",
-      "Bash(curl -s -o /dev/null -w 'css: %{http_code} %{size_download}B\\\\n' https://leejunsc.github.io/dayang-baojia/assets/index-DjjEeNVN.css)"
+      "Bash(curl -s -o /dev/null -w 'css: %{http_code} %{size_download}B\\\\n' https://leejunsc.github.io/dayang-baojia/assets/index-DjjEeNVN.css)",
+      "Bash(git commit -q -m '袋型体系调整:普通袋细分为三边封/自立/风琴/中封,异形改为叠加工艺,新增免费拉链\\(限三边封/自立/八边封\\) *)",
+      "Bash(git -c credential.helper='!gh auth git-credential' push -q origin main)"
     ]
   }
 }
