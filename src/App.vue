@@ -235,21 +235,7 @@ async function copyQuote() {
         </div>
 
         <div v-if="results[i].ok" class="result">
-          <div class="fee area-row">
-            <span class="fee-name">展开面积</span>
-            <span class="fee-amt light">
-              {{ (results[i] as any).result.areaPerBagM2.toFixed(4).replace(/\.?0+$/, '') }}㎡/个 ×
-              {{ item.quantity }}
-            </span>
-          </div>
-          <div v-for="(line, li) in (results[i] as any).result.lines" :key="li" class="fee">
-            <div class="fee-left">
-              <span class="fee-name">{{ line.label }}</span>
-              <span class="fee-detail">{{ line.detail }}</span>
-            </div>
-            <span class="fee-amt">{{ fmtCents(line.cents) }}元</span>
-          </div>
-          <div class="fee subtotal">
+          <div class="fee">
             <span class="fee-name">小计</span>
             <span class="fee-amt">{{ fmtCents((results[i] as any).result.subtotalCents) }}元</span>
           </div>

@@ -270,15 +270,19 @@ describe('输入校验', () => {
 })
 
 describe('报价文本', () => {
-  it('单款含明细、工艺、折扣、文案', () => {
+  it('单款含款式、小计折扣、应收、文案,不含计算参数', () => {
     const input = base({ quantity: 10, shaped: true, window: true, windowSurface: '亮面', zipper: true })
     const text = buildQuoteText([{ input, result: quote(input) }], new Date('2026-07-22'))
     expect(text).toContain('【打样报价】2026-07-22')
     expect(text).toContain('第1款 三边封袋 15×20cm 哑面 / 异形 / 开窗(亮面) / 拉链 × 10个')
-    expect(text).toContain('印刷费')
-    expect(text).toContain('拉链:不另加价 = 0元')
     expect(text).toContain('10-19个 8折')
+    expect(text).toContain('本款应收')
     expect(text).toContain('以上为打样费用,不含税运,最终以实际确认为准。')
+    // 客户不需要看到的计算参数
+    expect(text).not.toContain('展开面积')
+    expect(text).not.toContain('印刷费')
+    expect(text).not.toContain('复合制袋费')
+    expect(text).not.toContain('元/㎡')
     expect(text).not.toContain('合计应收')
   })
   it('多款出现合计', () => {

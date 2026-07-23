@@ -18,7 +18,8 @@
       "Bash(git commit -q -m '袋型体系调整:普通袋细分为三边封/自立/风琴/中封,异形改为叠加工艺,新增免费拉链\\(限三边封/自立/八边封\\) *)",
       "Bash(git -c credential.helper='!gh auth git-credential' push -q origin main)",
       "Bash(bash scripts/deploy.sh)",
-      "Bash(git commit -q -m '修正异形叠加价:普通袋系+60元/个,八边封+90元/个 *)"
+      "Bash(git commit -q -m '修正异形叠加价:普通袋系+60元/个,八边封+90元/个 *)",
+      "Bash(git commit -q -m '对客户隐藏计算参数:页面与报价文本只保留小计、折扣、应收 *)"
     ]
   }
 }

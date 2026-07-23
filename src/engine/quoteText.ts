@@ -2,7 +2,7 @@
  * 生成发给客户的报价文本(一键复制用)。
  */
 import { RULES } from './rules'
-import { fmtArea, fmtCents } from './quote'
+import { fmtCents } from './quote'
 import type { QuoteInput, QuoteResult } from './quote'
 
 export interface QuotedItem {
@@ -34,10 +34,6 @@ export function buildQuoteText(items: QuotedItem[], date = new Date()): string {
   items.forEach(({ input, result }, i) => {
     out.push('')
     out.push(`第${i + 1}款 ${input.bagType} ${sizeText(input)} ${craftText(input)} × ${input.quantity}个`)
-    out.push(`  展开面积 ${fmtArea(result.areaPerBagM2)}㎡/个,合计 ${fmtArea(result.totalAreaM2)}㎡`)
-    for (const line of result.lines) {
-      out.push(`  ${line.label}:${line.detail} = ${fmtCents(line.cents)}元`)
-    }
     out.push(`  小计 ${fmtCents(result.subtotalCents)}元,${result.discountLabel}`)
     out.push(`  本款应收:${result.totalYuan}元`)
   })
