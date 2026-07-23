@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { QuoteInputError, fmtCents, quote } from './engine/quote'
 import type { BagType, QuoteInput, QuoteResult, Surface } from './engine/quote'
 import { buildQuoteText } from './engine/quoteText'
-import { GUSSET_KIND, RULES } from './engine/rules'
+import { GUSSET_KIND, MATERIALS, RULES } from './engine/rules'
 
 const bagTypes: BagType[] = ['三边封袋', '自立袋', '风琴袋', '中封袋', '八边封袋']
 const surfaces: Surface[] = ['亮面', '哑面']
@@ -15,6 +15,7 @@ function newItem(): QuoteInput {
     heightCm: 20,
     gussetCm: 0,
     quantity: 1,
+    material: '透明',
     surface: '哑面',
     shaped: false,
     window: false,
@@ -168,6 +169,20 @@ async function copyQuote() {
                 <span>{{ gussetLabel(item) }}</span>
               </div>
             </template>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">材质</label>
+          <div class="seg">
+            <button
+              v-for="m in MATERIALS"
+              :key="m"
+              :class="{ on: item.material === m }"
+              @click="item.material = m"
+            >
+              {{ m }}
+            </button>
           </div>
         </div>
 

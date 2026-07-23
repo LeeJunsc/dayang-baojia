@@ -3,9 +3,9 @@
  * 内部以"分"(cents)为整数单位计算,避免浮点误差;最终总价四舍五入到元。
  */
 import { BAG_FAMILY, RULES, spreadAreaCm2 } from './rules'
-import type { BagType, Surface } from './rules'
+import type { BagType, Material, Surface } from './rules'
 
-export type { BagType, Surface }
+export type { BagType, Material, Surface }
 
 export interface QuoteInput {
   bagType: BagType
@@ -17,6 +17,8 @@ export interface QuoteInput {
   gussetCm: number
   /** 单款数量 */
   quantity: number
+  /** 材质:不影响价格,仅进入报价描述 */
+  material: Material
   /** 袋子整体表面 */
   surface: Surface
   /** 异形工艺(价格叠加,尺寸按外接矩形) */

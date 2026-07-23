@@ -6,6 +6,9 @@
 
 export type BagType = '三边封袋' | '自立袋' | '风琴袋' | '中封袋' | '八边封袋'
 export type Surface = '亮面' | '哑面'
+/** 材质:不影响价格,仅进入报价描述 */
+export type Material = '透明' | '镀铝' | '纯铝' | '牛皮'
+export const MATERIALS: Material[] = ['透明', '镀铝', '纯铝', '牛皮']
 
 /** 袋型家族:普通袋系 / 八边封系(决定开窗单价) */
 export type BagFamily = 'normal' | 'eightSide'

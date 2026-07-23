@@ -12,6 +12,7 @@ function base(over: Partial<QuoteInput> = {}): QuoteInput {
     heightCm: 20,
     gussetCm: 0,
     quantity: 1,
+    material: '透明',
     surface: '哑面',
     shaped: false,
     window: false,
@@ -90,6 +91,20 @@ describe('复合制袋费与异形叠加', () => {
 
   it('不选异形则无异形费用行', () => {
     expect(quote(base()).lines.some((l) => l.label === '异形')).toBe(false)
+  })
+})
+
+describe('材质', () => {
+  it('不影响价格', () => {
+    const totals = (['透明', '镀铝', '纯铝', '牛皮'] as const).map(
+      (material) => quote(base({ material, quantity: 10, window: true, spout: true })).totalYuan,
+    )
+    expect(new Set(totals).size).toBe(1)
+  })
+  it('进入报价文本描述', () => {
+    const input = base({ material: '镀铝', quantity: 5 })
+    const text = buildQuoteText([{ input, result: quote(input) }])
+    expect(text).toContain('镀铝 / 哑面')
   })
 })
 
@@ -274,7 +289,7 @@ describe('报价文本', () => {
     const input = base({ quantity: 10, shaped: true, window: true, windowSurface: '亮面', zipper: true })
     const text = buildQuoteText([{ input, result: quote(input) }], new Date('2026-07-22'))
     expect(text).toContain('【打样报价】2026-07-22')
-    expect(text).toContain('第1款 三边封袋 15×20cm 哑面 / 异形 / 开窗(亮面) / 拉链 × 10个')
+    expect(text).toContain('第1款 三边封袋 15×20cm 透明 / 哑面 / 异形 / 开窗(亮面) / 拉链 × 10个')
     expect(text).toContain('10-19个 8折')
     expect(text).toContain('本款应收')
     expect(text).toContain('以上为打样费用,不含税运,最终以实际确认为准。')

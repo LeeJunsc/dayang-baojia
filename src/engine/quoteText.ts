@@ -16,7 +16,7 @@ function sizeText(input: QuoteInput): string {
 }
 
 function craftText(input: QuoteInput): string {
-  const parts: string[] = [input.surface]
+  const parts: string[] = [input.material, input.surface]
   if (input.shaped) parts.push('异形')
   if (input.window) {
     parts.push(input.windowSurface === input.surface ? '开窗' : `开窗(${input.windowSurface})`)
