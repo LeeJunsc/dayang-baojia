@@ -69,18 +69,22 @@ export const RULES = {
   /** 气阀:10元/个,不足2个按2个计 */
   valve: { price: 10, minQty: 2 },
 
-  /** 数量折扣档(按单款数量,作用于全部费用) */
+  /**
+   * 数量折扣档(按单款数量,作用于全部费用)。
+   * cancelableByTinyBag:该档折扣受特小袋规则限制(命中特小袋时此档不打折)。
+   */
   discountTiers: [
-    { min: 5, max: 9, rate: 0.9, label: '5-9个 9折' },
+    { min: 5, max: 9, rate: 0.9, label: '5-9个 9折', cancelableByTinyBag: true },
     { min: 10, max: 19, rate: 0.8, label: '10-19个 8折' },
     { min: 20, max: 49, rate: 0.7, label: '20-49个 7折' },
     { min: 50, max: 99, rate: 0.6, label: '50-99个 6折' },
     { min: 100, max: Infinity, rate: 0.5, label: '100个及以上 5折' },
-  ],
+  ] as { min: number; max: number; rate: number; label: string; cancelableByTinyBag?: boolean }[],
 
   /**
-   * 特小袋规则:单袋印刷费低于 11 元的袋子,
-   * 在(折前)总印刷费低于 100 元(低消范围内)时整单不打折。
+   * 特小袋规则(2026-07-23 澄清):单袋印刷费低于 11 元的袋子,
+   * 在(折前)总印刷费低于 100 元(低消范围内)时,仅 9 折档(5-9个)不打折;
+   * 满足 8 折及更低折扣条件时照常打折。
    */
   tinyBag: { perBagPrintFeeBelow: 11, totalPrintFeeBelow: 100 },
 

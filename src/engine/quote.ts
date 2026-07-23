@@ -62,7 +62,7 @@ export interface QuoteResult {
   discountRate: number
   /** 折扣说明,如"10-19个 8折" */
   discountLabel: string
-  /** 是否因特小袋规则取消折扣 */
+  /** 是否因特小袋规则取消9折(仅9折档受影响,8折及以上照常) */
   tinyBagNoDiscount: boolean
   /** 应收总价(元,四舍五入) */
   totalYuan: number
@@ -188,17 +188,19 @@ export function quote(input: QuoteInput): QuoteResult {
 
   const subtotalCents = lines.reduce((sum, l) => sum + l.cents, 0)
 
-  // 数量折扣;特小袋在低消范围内整单不打折
+  // 数量折扣;特小袋在低消范围内仅9折档失效,8折及以上照常
   const tinyBag =
     perBagPrintCents < yuan(RULES.tinyBag.perBagPrintFeeBelow) &&
     rawPrintCents < yuan(RULES.tinyBag.totalPrintFeeBelow)
   let discountRate = 1
   let discountLabel = '1-4个 不打折'
-  if (tinyBag) {
-    discountLabel = '特小袋低消范围内,不打折'
-  } else {
-    const tier = RULES.discountTiers.find((t) => quantity >= t.min && quantity <= t.max)
-    if (tier) {
+  let tinyBagNoDiscount = false
+  const tier = RULES.discountTiers.find((t) => quantity >= t.min && quantity <= t.max)
+  if (tier) {
+    if (tinyBag && tier.cancelableByTinyBag) {
+      tinyBagNoDiscount = true
+      discountLabel = '特小袋低消范围内,不打9折'
+    } else {
       discountRate = tier.rate
       discountLabel = tier.label
     }
@@ -216,7 +218,7 @@ export function quote(input: QuoteInput): QuoteResult {
     subtotalCents,
     discountRate,
     discountLabel,
-    tinyBagNoDiscount: tinyBag,
+    tinyBagNoDiscount,
     totalYuan,
   }
 }

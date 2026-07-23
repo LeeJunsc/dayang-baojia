@@ -233,29 +233,46 @@ describe('数量折扣档(15×20三边封,单袋印刷36元,非特小袋)', () =
   })
 })
 
-describe('特小袋规则(单袋印刷费<11元)', () => {
+describe('特小袋规则(单袋印刷费<11元,低消内仅9折档失效)', () => {
   // 10×8cm 三边封:160cm²=0.016㎡ → 单袋印刷 9.6 元
   const tiny = { widthCm: 10, heightCm: 8 }
 
-  it('低消范围内(总印刷<100)不打折', () => {
+  it('5个(9折档)低消范围内:不打折', () => {
     const r = quote(base({ ...tiny, quantity: 5 }))
     expect(r.tinyBagNoDiscount).toBe(true)
     expect(r.discountRate).toBe(1)
+    expect(r.discountLabel).toBe('特小袋低消范围内,不打9折')
     // 100 + 30×5 = 250
     expect(r.totalYuan).toBe(250)
   })
-  it('10个仍在低消内(96<100)照样不打折', () => {
-    const r = quote(base({ ...tiny, quantity: 10 }))
+  it('9个(9折档上界)低消范围内:不打折', () => {
+    // 9.6×9=86.4 < 100
+    const r = quote(base({ ...tiny, quantity: 9 }))
     expect(r.tinyBagNoDiscount).toBe(true)
     expect(r.discountRate).toBe(1)
+    // 100 + 30×9 = 370
+    expect(r.totalYuan).toBe(370)
   })
-  it('总印刷≥100后折扣恢复', () => {
+  it('10个满足8折条件:即使低消内(96<100)依然打8折', () => {
+    const r = quote(base({ ...tiny, quantity: 10 }))
+    expect(r.tinyBagNoDiscount).toBe(false)
+    expect(r.discountRate).toBe(0.8)
+    // 印刷按低消100 + 制袋300 = 400 × 0.8 = 320
+    expect(r.totalYuan).toBe(320)
+  })
+  it('总印刷≥100后各档照常', () => {
     // 11个:9.6×11=105.6 ≥ 100 → 8折
     const r = quote(base({ ...tiny, quantity: 11 }))
     expect(r.tinyBagNoDiscount).toBe(false)
     expect(r.discountRate).toBe(0.8)
     // 小计 105.6 + 330 = 435.6 × 0.8 = 348.48 → 348
     expect(r.totalYuan).toBe(348)
+  })
+  it('非特小袋(单袋印刷≥11元)5-9个照常打9折', () => {
+    // 12.5×10×2=250cm²=0.025㎡ → 单袋印刷15元;6个 → 9折(见低消用例)
+    const r = quote(base({ widthCm: 12.5, heightCm: 10, quantity: 6 }))
+    expect(r.tinyBagNoDiscount).toBe(false)
+    expect(r.discountRate).toBe(0.9)
   })
 })
 
