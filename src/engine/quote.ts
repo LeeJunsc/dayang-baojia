@@ -84,6 +84,9 @@ function assertInput(input: QuoteInput): void {
   if (input.zipper && !RULES.zipper.allowed.includes(input.bagType)) {
     throw new QuoteInputError(`${input.bagType}不支持拉链`)
   }
+  if (input.window && input.material !== RULES.windowRequiresMaterial) {
+    throw new QuoteInputError(`牛皮纸开窗仅${RULES.windowRequiresMaterial}材质可选`)
+  }
 }
 
 /** 元 → 分(规则表中的单价都是整数元,直接乘100) */

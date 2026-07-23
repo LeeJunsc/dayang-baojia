@@ -57,6 +57,15 @@ function zipperAllowed(item: QuoteInput): boolean {
   return RULES.zipper.allowed.includes(item.bagType)
 }
 
+function windowAllowed(item: QuoteInput): boolean {
+  return item.material === RULES.windowRequiresMaterial
+}
+
+function setMaterial(item: QuoteInput, m: (typeof MATERIALS)[number]) {
+  item.material = m
+  if (!windowAllowed(item)) item.window = false
+}
+
 function setBagType(item: QuoteInput, t: BagType) {
   item.bagType = t
   if (!hasGusset(item)) item.gussetCm = 0
@@ -179,7 +188,7 @@ async function copyQuote() {
               v-for="m in MATERIALS"
               :key="m"
               :class="{ on: item.material === m }"
-              @click="item.material = m"
+              @click="setMaterial(item, m)"
             >
               {{ m }}
             </button>
@@ -206,7 +215,12 @@ async function copyQuote() {
             <button class="chip" :class="{ on: item.shaped }" @click="item.shaped = !item.shaped">
               异形
             </button>
-            <button class="chip" :class="{ on: item.window }" @click="toggleWindow(item)">
+            <button
+              v-if="windowAllowed(item)"
+              class="chip"
+              :class="{ on: item.window }"
+              @click="toggleWindow(item)"
+            >
               牛皮纸开窗
             </button>
             <button

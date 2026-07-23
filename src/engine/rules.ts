@@ -51,6 +51,9 @@ export const RULES = {
   /** 牛皮纸开窗(元/个),按袋型家族 */
   window: { normal: 60, eightSide: 90 } as Record<BagFamily, number>,
 
+  /** 牛皮纸开窗仅此材质可选 */
+  windowRequiresMaterial: '牛皮' as Material,
+
   /** 开窗处表面与袋子整体表面不一致:元/个 */
   surfaceMismatch: 80,
 
