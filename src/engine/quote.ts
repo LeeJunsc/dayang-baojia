@@ -2,19 +2,19 @@
  * 报价引擎:纯函数,框架无关,网页版与小程序共用。
  * 内部以"分"(cents)为整数单位计算,避免浮点误差;最终总价四舍五入到元。
  */
-import { BAG_FAMILY, RULES, spreadAreaCm2 } from './rules'
+import { BAG_FAMILY, RULES, spreadAreaMm2 } from './rules'
 import type { BagType, Material, Surface } from './rules'
 
 export type { BagType, Material, Surface }
 
 export interface QuoteInput {
   bagType: BagType
-  /** 宽 cm(异形时为外接矩形宽) */
-  widthCm: number
-  /** 高 cm */
-  heightCm: number
-  /** 自立袋=底风琴;风琴袋/八边封袋=侧风琴;三边封袋/中封袋不使用 */
-  gussetCm: number
+  /** 宽 mm(异形时为外接矩形宽) */
+  widthMm: number
+  /** 高 mm */
+  heightMm: number
+  /** 自立袋=底风琴;风琴袋/八边封袋=侧风琴;三边封袋/中封袋不使用(单位 mm) */
+  gussetMm: number
   /** 单款数量 */
   quantity: number
   /** 材质:不影响价格,仅进入报价描述 */
@@ -71,11 +71,11 @@ export interface QuoteResult {
 export class QuoteInputError extends Error {}
 
 function assertInput(input: QuoteInput): void {
-  const { widthCm, heightCm, gussetCm, quantity } = input
-  if (!(widthCm > 0) || !(heightCm > 0)) {
+  const { widthMm, heightMm, gussetMm, quantity } = input
+  if (!(widthMm > 0) || !(heightMm > 0)) {
     throw new QuoteInputError('请填写有效的宽和高(大于0)')
   }
-  if (!(gussetCm >= 0)) {
+  if (!(gussetMm >= 0)) {
     throw new QuoteInputError('风琴尺寸不能为负数')
   }
   if (!Number.isInteger(quantity) || quantity < 1) {
@@ -94,10 +94,10 @@ const yuan = (n: number) => Math.round(n * 100)
 
 export function quote(input: QuoteInput): QuoteResult {
   assertInput(input)
-  const { bagType, widthCm, heightCm, gussetCm, quantity, surface } = input
+  const { bagType, widthMm, heightMm, gussetMm, quantity, surface } = input
   const family = BAG_FAMILY[bagType]
 
-  const areaPerBagM2 = spreadAreaCm2(bagType, widthCm, heightCm, gussetCm) / 10000
+  const areaPerBagM2 = spreadAreaMm2(bagType, widthMm, heightMm, gussetMm) / 1_000_000
   const totalAreaM2 = areaPerBagM2 * quantity
 
   const lines: FeeLine[] = []

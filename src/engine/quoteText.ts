@@ -11,8 +11,8 @@ export interface QuotedItem {
 }
 
 function sizeText(input: QuoteInput): string {
-  const g = input.gussetCm > 0 ? `+${input.gussetCm}` : ''
-  return `${input.widthCm}×${input.heightCm}${g}cm`
+  const g = input.gussetMm > 0 ? `+${input.gussetMm}` : ''
+  return `${input.widthMm}×${input.heightMm}${g}mm`
 }
 
 function craftText(input: QuoteInput): string {

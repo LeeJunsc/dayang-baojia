@@ -93,26 +93,30 @@ export const RULES = {
 }
 
 /**
- * 展开面积(cm²)。异形工艺按外接矩形尺寸,套用同袋型公式。
- * 三边封袋 / 中封袋:宽 × 高 × 2(无风琴)
- * 自立袋:宽 × (高 + 底风琴) × 2
- * 风琴袋:(宽 + 侧风琴) × 高 × 2
+ * 展开面积(mm²),输入尺寸单位 mm。异形工艺按外接矩形尺寸,套用同袋型公式。
+ * (2026-07-23 按工厂公式更新,单位统一为 mm)
+ * 三边封袋:宽 × 高 × 2
+ * 自立袋:宽 × (高 + 底风琴/2) × 2
+ * 风琴袋:(宽 + 侧风琴 + 10) × 高 × 2
+ * 中封袋:(宽 + 10) × 高 × 2
  * 八边封袋:(宽 + 侧风琴) × 高 × 2 + 宽 × 侧风琴(底)
  */
-export function spreadAreaCm2(
+export function spreadAreaMm2(
   bagType: BagType,
-  widthCm: number,
-  heightCm: number,
-  gussetCm: number,
+  widthMm: number,
+  heightMm: number,
+  gussetMm: number,
 ): number {
-  switch (GUSSET_KIND[bagType]) {
-    case 'none':
-      return widthCm * heightCm * 2
-    case 'bottom':
-      return widthCm * (heightCm + gussetCm) * 2
-    case 'side':
-      return bagType === '八边封袋'
-        ? (widthCm + gussetCm) * heightCm * 2 + widthCm * gussetCm
-        : (widthCm + gussetCm) * heightCm * 2
+  switch (bagType) {
+    case '三边封袋':
+      return widthMm * heightMm * 2
+    case '自立袋':
+      return widthMm * (heightMm + gussetMm / 2) * 2
+    case '风琴袋':
+      return (widthMm + gussetMm + 10) * heightMm * 2
+    case '中封袋':
+      return (widthMm + 10) * heightMm * 2
+    case '八边封袋':
+      return (widthMm + gussetMm) * heightMm * 2 + widthMm * gussetMm
   }
 }

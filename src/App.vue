@@ -11,9 +11,9 @@ const surfaces: Surface[] = ['亮面', '哑面']
 function newItem(): QuoteInput {
   return {
     bagType: '三边封袋',
-    widthCm: 15,
-    heightCm: 20,
-    gussetCm: 0,
+    widthMm: 150,
+    heightMm: 200,
+    gussetMm: 0,
     quantity: 1,
     material: '透明',
     surface: '哑面',
@@ -68,7 +68,7 @@ function setMaterial(item: QuoteInput, m: (typeof MATERIALS)[number]) {
 
 function setBagType(item: QuoteInput, t: BagType) {
   item.bagType = t
-  if (!hasGusset(item)) item.gussetCm = 0
+  if (!hasGusset(item)) item.gussetMm = 0
   if (!zipperAllowed(item)) item.zipper = false
 }
 
@@ -158,23 +158,23 @@ async function copyQuote() {
 
         <div class="field">
           <label class="field-label">
-            尺寸 cm
+            尺寸 mm
             <span v-if="item.shaped" class="field-hint">异形填外接矩形尺寸</span>
           </label>
           <div class="dims">
             <div class="dim">
-              <input v-model.number="item.widthCm" type="number" inputmode="decimal" min="0" />
+              <input v-model.number="item.widthMm" type="number" inputmode="decimal" min="0" />
               <span>宽</span>
             </div>
             <span class="dim-x">×</span>
             <div class="dim">
-              <input v-model.number="item.heightCm" type="number" inputmode="decimal" min="0" />
+              <input v-model.number="item.heightMm" type="number" inputmode="decimal" min="0" />
               <span>高</span>
             </div>
             <template v-if="hasGusset(item)">
               <span class="dim-x">+</span>
               <div class="dim">
-                <input v-model.number="item.gussetCm" type="number" inputmode="decimal" min="0" />
+                <input v-model.number="item.gussetMm" type="number" inputmode="decimal" min="0" />
                 <span>{{ gussetLabel(item) }}</span>
               </div>
             </template>

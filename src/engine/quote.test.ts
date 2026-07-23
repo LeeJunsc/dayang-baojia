@@ -2,15 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { QuoteInputError, quote } from './quote'
 import type { QuoteInput } from './quote'
 import { buildQuoteText } from './quoteText'
-import { spreadAreaCm2 } from './rules'
+import { spreadAreaMm2 } from './rules'
 
-/** 基准输入:三边封袋 15×20cm 哑面 无工艺 */
+/** 基准输入:三边封袋 150×200mm 透明 哑面 无工艺 */
 function base(over: Partial<QuoteInput> = {}): QuoteInput {
   return {
     bagType: '三边封袋',
-    widthCm: 15,
-    heightCm: 20,
-    gussetCm: 0,
+    widthMm: 150,
+    heightMm: 200,
+    gussetMm: 0,
     quantity: 1,
     material: '透明',
     surface: '哑面',
@@ -24,21 +24,23 @@ function base(over: Partial<QuoteInput> = {}): QuoteInput {
   }
 }
 
-describe('展开面积公式', () => {
-  it('三边封袋/中封袋:宽×高×2(无风琴)', () => {
-    expect(spreadAreaCm2('三边封袋', 15, 20, 0)).toBe(600)
-    expect(spreadAreaCm2('中封袋', 15, 20, 0)).toBe(600)
+describe('展开面积公式(单位mm,2026-07-23 工厂版)', () => {
+  it('三边封袋:宽×高×2(无风琴)', () => {
+    expect(spreadAreaMm2('三边封袋', 150, 200, 0)).toBe(60000)
     // 无风琴袋型忽略风琴值
-    expect(spreadAreaCm2('三边封袋', 15, 20, 99)).toBe(600)
+    expect(spreadAreaMm2('三边封袋', 150, 200, 99)).toBe(60000)
   })
-  it('自立袋:宽×(高+底风琴)×2', () => {
-    expect(spreadAreaCm2('自立袋', 15, 20, 4)).toBe(15 * 24 * 2)
+  it('自立袋:宽×(高+底风琴/2)×2', () => {
+    expect(spreadAreaMm2('自立袋', 150, 200, 40)).toBe(150 * 220 * 2) // 66000
   })
-  it('风琴袋:(宽+侧风琴)×高×2', () => {
-    expect(spreadAreaCm2('风琴袋', 15, 20, 4)).toBe(19 * 20 * 2)
+  it('风琴袋:(宽+侧风琴+10)×高×2', () => {
+    expect(spreadAreaMm2('风琴袋', 150, 200, 40)).toBe(200 * 200 * 2) // 80000
+  })
+  it('中封袋:(宽+10)×高×2', () => {
+    expect(spreadAreaMm2('中封袋', 150, 200, 0)).toBe(160 * 200 * 2) // 64000
   })
   it('八边封:(宽+侧风琴)×高×2 + 宽×侧风琴', () => {
-    expect(spreadAreaCm2('八边封袋', 16, 24, 8)).toBe((16 + 8) * 24 * 2 + 16 * 8) // 1280
+    expect(spreadAreaMm2('八边封袋', 160, 240, 80)).toBe((160 + 80) * 240 * 2 + 160 * 80) // 128000
   })
 })
 
@@ -58,8 +60,8 @@ describe('印刷费与低消', () => {
     expect(r.lines[0].cents).toBe(360_00)
   })
   it('达到100元不算触发低消', () => {
-    // 25×20×2=1000cm²=0.1㎡ → 60元/个,2个=120元 ≥ 100
-    const r = quote(base({ widthCm: 25, heightCm: 20, quantity: 2 }))
+    // 250×200mm → 100000mm²=0.1㎡ → 60元/个,2个=120元 ≥ 100
+    const r = quote(base({ widthMm: 250, heightMm: 200, quantity: 2 }))
     expect(r.minChargeApplied).toBe(false)
     expect(r.lines[0].cents).toBe(120_00)
   })
@@ -84,7 +86,7 @@ describe('复合制袋费与异形叠加', () => {
     expect(r.lines.find((l) => l.label === '复合制袋费')!.cents).toBe(30 * 10 * 100)
     expect(r.lines.find((l) => l.label === '异形')!.cents).toBe(60 * 10 * 100)
     // 八边封:制袋60 + 异形90 = 150元/个
-    const r8 = quote(base({ bagType: '八边封袋', gussetCm: 8, shaped: true, quantity: 10 }))
+    const r8 = quote(base({ bagType: '八边封袋', gussetMm: 80, shaped: true, quantity: 10 }))
     expect(r8.lines.find((l) => l.label === '复合制袋费')!.cents).toBe(60 * 10 * 100)
     expect(r8.lines.find((l) => l.label === '异形')!.cents).toBe(90 * 10 * 100)
   })
@@ -121,7 +123,7 @@ describe('开窗与表面', () => {
       expect(r.lines.find((l) => l.label === '牛皮纸开窗')!.cents).toBe(60 * 10 * 100)
     }
     const r8 = quote(
-      base({ bagType: '八边封袋', gussetCm: 8, material: '牛皮', window: true, quantity: 10 }),
+      base({ bagType: '八边封袋', gussetMm: 80, material: '牛皮', window: true, quantity: 10 }),
     )
     expect(r8.lines.find((l) => l.label === '牛皮纸开窗')!.cents).toBe(90 * 10 * 100)
   })
@@ -176,7 +178,7 @@ describe('嘴与气阀(最低计费数量)', () => {
   })
 })
 
-describe('数量折扣档(15×20三边封,单袋印刷36元,非特小袋)', () => {
+describe('数量折扣档(150×200三边封,单袋印刷36元,非特小袋)', () => {
   it.each([
     [1, 1],
     [4, 1],
@@ -195,17 +197,17 @@ describe('数量折扣档(15×20三边封,单袋印刷36元,非特小袋)', () =
   })
 
   it('折扣作用于全部费用(印刷+制袋+异形+开窗+加价项)', () => {
-    // 八边封 16×24+8,qty20,异形+开窗+不一致+拉链+嘴+气阀
-    // 面积1280cm²=0.128㎡ → 印刷 600×0.128×20 = 1536
+    // 八边封 160×240+80mm,qty20,异形+开窗+不一致+拉链+嘴+气阀
+    // 面积128000mm²=0.128㎡ → 印刷 600×0.128×20 = 1536
     // 制袋 60×20=1200;异形 90×20=1800;开窗 90×20=1800;不一致 80×20=1600
     // 拉链 0;嘴 25×20=500;气阀 10×20=200
     // 小计 8636 × 0.7 = 6045.2 → 6045
     const r = quote(
       base({
         bagType: '八边封袋',
-        widthCm: 16,
-        heightCm: 24,
-        gussetCm: 8,
+        widthMm: 160,
+        heightMm: 240,
+        gussetMm: 80,
         quantity: 20,
         material: '牛皮',
         surface: '哑面',
@@ -223,8 +225,8 @@ describe('数量折扣档(15×20三边封,单袋印刷36元,非特小袋)', () =
   })
 
   it('非特小袋(单袋印刷≥11元)触发低消仍正常打折', () => {
-    // 12.5×10×2=250cm²=0.025㎡ → 单袋印刷15元;6个=90元<100 → 低消,但仍9折
-    const r = quote(base({ widthCm: 12.5, heightCm: 10, quantity: 6 }))
+    // 125×100mm → 25000mm²=0.025㎡ → 单袋印刷15元;6个=90元<100 → 低消,但仍9折
+    const r = quote(base({ widthMm: 125, heightMm: 100, quantity: 6 }))
     expect(r.minChargeApplied).toBe(true)
     expect(r.tinyBagNoDiscount).toBe(false)
     expect(r.discountRate).toBe(0.9)
@@ -234,8 +236,8 @@ describe('数量折扣档(15×20三边封,单袋印刷36元,非特小袋)', () =
 })
 
 describe('特小袋规则(单袋印刷费<11元,低消内仅9折档失效)', () => {
-  // 10×8cm 三边封:160cm²=0.016㎡ → 单袋印刷 9.6 元
-  const tiny = { widthCm: 10, heightCm: 8 }
+  // 100×80mm 三边封:16000mm²=0.016㎡ → 单袋印刷 9.6 元
+  const tiny = { widthMm: 100, heightMm: 80 }
 
   it('5个(9折档)低消范围内:不打折', () => {
     const r = quote(base({ ...tiny, quantity: 5 }))
@@ -269,8 +271,8 @@ describe('特小袋规则(单袋印刷费<11元,低消内仅9折档失效)', () 
     expect(r.totalYuan).toBe(348)
   })
   it('非特小袋(单袋印刷≥11元)5-9个照常打9折', () => {
-    // 12.5×10×2=250cm²=0.025㎡ → 单袋印刷15元;6个 → 9折(见低消用例)
-    const r = quote(base({ widthCm: 12.5, heightCm: 10, quantity: 6 }))
+    // 125×100mm → 单袋印刷15元;6个 → 9折
+    const r = quote(base({ widthMm: 125, heightMm: 100, quantity: 6 }))
     expect(r.tinyBagNoDiscount).toBe(false)
     expect(r.discountRate).toBe(0.9)
   })
@@ -278,15 +280,15 @@ describe('特小袋规则(单袋印刷费<11元,低消内仅9折档失效)', () 
 
 describe('金额取整:折后四舍五入到元', () => {
   it('348.48 → 348', () => {
-    expect(quote(base({ widthCm: 10, heightCm: 8, quantity: 11 })).totalYuan).toBe(348)
+    expect(quote(base({ widthMm: 100, heightMm: 80, quantity: 11 })).totalYuan).toBe(348)
   })
   it('6045.2 → 6045', () => {
     const r = quote(
       base({
         bagType: '八边封袋',
-        widthCm: 16,
-        heightCm: 24,
-        gussetCm: 8,
+        widthMm: 160,
+        heightMm: 240,
+        gussetMm: 80,
         quantity: 20,
         material: '牛皮',
         shaped: true,
@@ -303,15 +305,15 @@ describe('金额取整:折后四舍五入到元', () => {
 
 describe('输入校验', () => {
   it('宽高必须大于0', () => {
-    expect(() => quote(base({ widthCm: 0 }))).toThrow(QuoteInputError)
-    expect(() => quote(base({ heightCm: -1 }))).toThrow(QuoteInputError)
+    expect(() => quote(base({ widthMm: 0 }))).toThrow(QuoteInputError)
+    expect(() => quote(base({ heightMm: -1 }))).toThrow(QuoteInputError)
   })
   it('数量必须是不小于1的整数', () => {
     expect(() => quote(base({ quantity: 0 }))).toThrow(QuoteInputError)
     expect(() => quote(base({ quantity: 2.5 }))).toThrow(QuoteInputError)
   })
   it('风琴不能为负', () => {
-    expect(() => quote(base({ gussetCm: -1 }))).toThrow(QuoteInputError)
+    expect(() => quote(base({ gussetMm: -1 }))).toThrow(QuoteInputError)
   })
 })
 
@@ -327,7 +329,7 @@ describe('报价文本', () => {
     })
     const text = buildQuoteText([{ input, result: quote(input) }], new Date('2026-07-22'))
     expect(text).toContain('【打样报价】2026-07-22')
-    expect(text).toContain('第1款 三边封袋 15×20cm 牛皮 / 哑面 / 异形 / 开窗(亮面) / 拉链 × 10个')
+    expect(text).toContain('第1款 三边封袋 150×200mm 牛皮 / 哑面 / 异形 / 开窗(亮面) / 拉链 × 10个')
     expect(text).toContain('10-19个 8折')
     expect(text).toContain('本款应收')
     expect(text).toContain('以上为打样费用,不含税运,最终以实际确认为准。')
@@ -340,7 +342,7 @@ describe('报价文本', () => {
   })
   it('多款出现合计', () => {
     const a = base({ quantity: 10 })
-    const b = base({ bagType: '八边封袋', gussetCm: 8, quantity: 5 })
+    const b = base({ bagType: '八边封袋', gussetMm: 80, quantity: 5 })
     const text = buildQuoteText([
       { input: a, result: quote(a) },
       { input: b, result: quote(b) },
