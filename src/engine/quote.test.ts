@@ -4,7 +4,7 @@ import type { QuoteInput } from './quote'
 import { buildQuoteText } from './quoteText'
 import { spreadAreaMm2 } from './rules'
 
-/** 基准输入:三边封袋 150×200mm 透明 哑面 无工艺 */
+/** 基准输入:三边封袋 150×200mm OPP哑面 无工艺 */
 function base(over: Partial<QuoteInput> = {}): QuoteInput {
   return {
     bagType: '三边封袋',
@@ -12,26 +12,27 @@ function base(over: Partial<QuoteInput> = {}): QuoteInput {
     heightMm: 200,
     gussetMm: 0,
     quantity: 1,
-    material: '透明',
-    surface: '哑面',
+    surface: 'OPP哑面',
     shaped: false,
     window: false,
     windowSurface: '哑面',
-    zipper: false,
     spout: false,
     valve: false,
     ...over,
   }
 }
 
-describe('展开面积公式(单位mm,2026-07-23 工厂版)', () => {
-  it('三边封袋:宽×高×2(无风琴)', () => {
+describe('展开面积公式(单位mm;拉链变体与基础袋型同公式)', () => {
+  it('三边封系:宽×高×2(无风琴)', () => {
     expect(spreadAreaMm2('三边封袋', 150, 200, 0)).toBe(60000)
+    expect(spreadAreaMm2('三边封拉链袋', 150, 200, 0)).toBe(60000)
     // 无风琴袋型忽略风琴值
     expect(spreadAreaMm2('三边封袋', 150, 200, 99)).toBe(60000)
   })
-  it('自立袋:宽×(高+底风琴/2)×2', () => {
-    expect(spreadAreaMm2('自立袋', 150, 200, 40)).toBe(150 * 220 * 2) // 66000
+  it('自立系:宽×(高+底风琴/2)×2', () => {
+    for (const t of ['自立袋', '自立拉链袋', '自立单面拉链袋'] as const) {
+      expect(spreadAreaMm2(t, 150, 200, 40)).toBe(150 * 220 * 2) // 66000
+    }
   })
   it('风琴袋:(宽+侧风琴+10)×高×2', () => {
     expect(spreadAreaMm2('风琴袋', 150, 200, 40)).toBe(200 * 200 * 2) // 80000
@@ -39,8 +40,10 @@ describe('展开面积公式(单位mm,2026-07-23 工厂版)', () => {
   it('中封袋:(宽+10)×高×2', () => {
     expect(spreadAreaMm2('中封袋', 150, 200, 0)).toBe(160 * 200 * 2) // 64000
   })
-  it('八边封:(宽+侧风琴)×高×2 + 宽×侧风琴', () => {
-    expect(spreadAreaMm2('八边封袋', 160, 240, 80)).toBe((160 + 80) * 240 * 2 + 160 * 80) // 128000
+  it('八边封系:(宽+侧风琴)×高×2 + 宽×侧风琴', () => {
+    for (const t of ['八边封袋(无拉链)', '八边封拉链袋', '八边封单面拉链袋'] as const) {
+      expect(spreadAreaMm2(t, 160, 240, 80)).toBe((160 + 80) * 240 * 2 + 160 * 80) // 128000
+    }
   })
 })
 
@@ -70,23 +73,37 @@ describe('印刷费与低消', () => {
 describe('复合制袋费与异形叠加', () => {
   it.each([
     ['三边封袋', 30],
+    ['三边封拉链袋', 30],
     ['自立袋', 30],
+    ['自立拉链袋', 30],
+    ['自立单面拉链袋', 30],
     ['风琴袋', 30],
     ['中封袋', 30],
-    ['八边封袋', 60],
+    ['八边封袋(无拉链)', 60],
+    ['八边封拉链袋', 60],
+    ['八边封单面拉链袋', 60],
   ] as const)('%s %d元/个', (bagType, unit) => {
     const r = quote(base({ bagType, quantity: 10 }))
     const line = r.lines.find((l) => l.label === '复合制袋费')!
     expect(line.cents).toBe(unit * 10 * 100)
   })
 
-  it('异形工艺叠加:普通袋系+60元/个,八边封+90元/个', () => {
+  it('拉链袋型与基础袋型同价(拉链不另加钱)', () => {
+    expect(quote(base({ bagType: '三边封拉链袋', quantity: 10 })).totalYuan).toBe(
+      quote(base({ bagType: '三边封袋', quantity: 10 })).totalYuan,
+    )
+    expect(
+      quote(base({ bagType: '八边封拉链袋', gussetMm: 80, quantity: 10 })).totalYuan,
+    ).toBe(quote(base({ bagType: '八边封袋(无拉链)', gussetMm: 80, quantity: 10 })).totalYuan)
+  })
+
+  it('异形工艺叠加:普通袋系+60元/个,八边封系+90元/个', () => {
     // 普通袋系:制袋30 + 异形60 = 90元/个
     const r = quote(base({ shaped: true, quantity: 10 }))
     expect(r.lines.find((l) => l.label === '复合制袋费')!.cents).toBe(30 * 10 * 100)
     expect(r.lines.find((l) => l.label === '异形')!.cents).toBe(60 * 10 * 100)
-    // 八边封:制袋60 + 异形90 = 150元/个
-    const r8 = quote(base({ bagType: '八边封袋', gussetMm: 80, shaped: true, quantity: 10 }))
+    // 八边封系:制袋60 + 异形90 = 150元/个
+    const r8 = quote(base({ bagType: '八边封拉链袋', gussetMm: 80, shaped: true, quantity: 10 }))
     expect(r8.lines.find((l) => l.label === '复合制袋费')!.cents).toBe(60 * 10 * 100)
     expect(r8.lines.find((l) => l.label === '异形')!.cents).toBe(90 * 10 * 100)
   })
@@ -96,72 +113,32 @@ describe('复合制袋费与异形叠加', () => {
   })
 })
 
-describe('材质', () => {
-  it('不影响价格', () => {
-    const totals = (['透明', '镀铝', '纯铝', '牛皮'] as const).map(
-      (material) => quote(base({ material, quantity: 10, spout: true, valve: true })).totalYuan,
-    )
-    expect(new Set(totals).size).toBe(1)
-  })
-  it('进入报价文本描述', () => {
-    const input = base({ material: '镀铝', quantity: 5 })
-    const text = buildQuoteText([{ input, result: quote(input) }])
-    expect(text).toContain('镀铝 / 哑面')
-  })
-})
-
-describe('开窗与表面', () => {
-  it('仅牛皮材质可选开窗,其他材质报错', () => {
-    for (const material of ['透明', '镀铝', '纯铝'] as const) {
-      expect(() => quote(base({ material, window: true }))).toThrow(QuoteInputError)
-    }
-    expect(() => quote(base({ material: '牛皮', window: true }))).not.toThrow()
-  })
-  it('普通袋系开窗60元/个,八边封90元/个', () => {
-    for (const bagType of ['三边封袋', '自立袋', '风琴袋', '中封袋'] as const) {
-      const r = quote(base({ bagType, material: '牛皮', window: true, quantity: 10 }))
+describe('开窗与表面(不一致只比较亮/哑光泽)', () => {
+  it('普通袋系开窗60元/个,八边封系90元/个', () => {
+    for (const bagType of ['三边封袋', '自立拉链袋', '风琴袋', '中封袋'] as const) {
+      const r = quote(base({ bagType, window: true, quantity: 10 }))
       expect(r.lines.find((l) => l.label === '牛皮纸开窗')!.cents).toBe(60 * 10 * 100)
     }
-    const r8 = quote(
-      base({ bagType: '八边封袋', gussetMm: 80, material: '牛皮', window: true, quantity: 10 }),
-    )
-    expect(r8.lines.find((l) => l.label === '牛皮纸开窗')!.cents).toBe(90 * 10 * 100)
-  })
-  it('开窗处表面与整体一致:不加价', () => {
-    const r = quote(
-      base({ material: '牛皮', window: true, surface: '哑面', windowSurface: '哑面', quantity: 10 }),
-    )
-    expect(r.lines.some((l) => l.label.includes('不一致'))).toBe(false)
-  })
-  it('开窗处表面与整体不一致:+80元/个', () => {
-    const r = quote(
-      base({ material: '牛皮', window: true, surface: '哑面', windowSurface: '亮面', quantity: 10 }),
-    )
-    expect(r.lines.find((l) => l.label.includes('不一致'))!.cents).toBe(80 * 10 * 100)
-  })
-  it('未开窗时表面不一致不加价', () => {
-    const r = quote(base({ window: false, surface: '哑面', windowSurface: '亮面', quantity: 10 }))
-    expect(r.lines.some((l) => l.label.includes('不一致'))).toBe(false)
-  })
-})
-
-describe('拉链', () => {
-  it('三边封袋/自立袋/八边封袋可选,0元且明细可见', () => {
-    for (const bagType of ['三边封袋', '自立袋', '八边封袋'] as const) {
-      const r = quote(base({ bagType, zipper: true, quantity: 10 }))
-      const line = r.lines.find((l) => l.label === '拉链')!
-      expect(line.cents).toBe(0)
-      expect(line.detail).toBe('不另加价')
+    for (const bagType of ['八边封袋(无拉链)', '八边封单面拉链袋'] as const) {
+      const r = quote(base({ bagType, gussetMm: 80, window: true, quantity: 10 }))
+      expect(r.lines.find((l) => l.label === '牛皮纸开窗')!.cents).toBe(90 * 10 * 100)
     }
   })
-  it('风琴袋/中封袋不可选拉链', () => {
-    expect(() => quote(base({ bagType: '风琴袋', zipper: true }))).toThrow(QuoteInputError)
-    expect(() => quote(base({ bagType: '中封袋', zipper: true }))).toThrow(QuoteInputError)
+  it('开窗处光泽与整体一致:不加价', () => {
+    const r1 = quote(base({ surface: 'OPP哑面', window: true, windowSurface: '哑面', quantity: 10 }))
+    expect(r1.lines.some((l) => l.label.includes('不一致'))).toBe(false)
+    const r2 = quote(base({ surface: 'PET亮面', window: true, windowSurface: '亮面', quantity: 10 }))
+    expect(r2.lines.some((l) => l.label.includes('不一致'))).toBe(false)
   })
-  it('拉链不影响总价', () => {
-    const withZip = quote(base({ zipper: true, quantity: 10 }))
-    const without = quote(base({ quantity: 10 }))
-    expect(withZip.totalYuan).toBe(without.totalYuan)
+  it('开窗处光泽与整体不一致:+80元/个', () => {
+    const r1 = quote(base({ surface: 'OPP哑面', window: true, windowSurface: '亮面', quantity: 10 }))
+    expect(r1.lines.find((l) => l.label.includes('不一致'))!.cents).toBe(80 * 10 * 100)
+    const r2 = quote(base({ surface: 'PET亮面', window: true, windowSurface: '哑面', quantity: 10 }))
+    expect(r2.lines.find((l) => l.label.includes('不一致'))!.cents).toBe(80 * 10 * 100)
+  })
+  it('未开窗时表面不一致不加价', () => {
+    const r = quote(base({ window: false, surface: 'OPP哑面', windowSurface: '亮面', quantity: 10 }))
+    expect(r.lines.some((l) => l.label.includes('不一致'))).toBe(false)
   })
 })
 
@@ -197,24 +174,22 @@ describe('数量折扣档(150×200三边封,单袋印刷36元,非特小袋)', ()
   })
 
   it('折扣作用于全部费用(印刷+制袋+异形+开窗+加价项)', () => {
-    // 八边封 160×240+80mm,qty20,异形+开窗+不一致+拉链+嘴+气阀
+    // 八边封拉链袋 160×240+80mm,qty20,异形+开窗+光泽不一致+嘴+气阀
     // 面积128000mm²=0.128㎡ → 印刷 600×0.128×20 = 1536
     // 制袋 60×20=1200;异形 90×20=1800;开窗 90×20=1800;不一致 80×20=1600
-    // 拉链 0;嘴 25×20=500;气阀 10×20=200
+    // 嘴 25×20=500;气阀 10×20=200
     // 小计 8636 × 0.7 = 6045.2 → 6045
     const r = quote(
       base({
-        bagType: '八边封袋',
+        bagType: '八边封拉链袋',
         widthMm: 160,
         heightMm: 240,
         gussetMm: 80,
         quantity: 20,
-        material: '牛皮',
-        surface: '哑面',
+        surface: 'OPP哑面',
         shaped: true,
         window: true,
         windowSurface: '亮面',
-        zipper: true,
         spout: true,
         valve: true,
       }),
@@ -285,16 +260,15 @@ describe('金额取整:折后四舍五入到元', () => {
   it('6045.2 → 6045', () => {
     const r = quote(
       base({
-        bagType: '八边封袋',
+        bagType: '八边封拉链袋',
         widthMm: 160,
         heightMm: 240,
         gussetMm: 80,
         quantity: 20,
-        material: '牛皮',
+        surface: 'OPP哑面',
         shaped: true,
         window: true,
         windowSurface: '亮面',
-        zipper: true,
         spout: true,
         valve: true,
       }),
@@ -320,16 +294,15 @@ describe('输入校验', () => {
 describe('报价文本', () => {
   it('单款含款式、小计折扣、应收、文案,不含计算参数', () => {
     const input = base({
+      bagType: '三边封拉链袋',
       quantity: 10,
-      material: '牛皮',
       shaped: true,
       window: true,
       windowSurface: '亮面',
-      zipper: true,
     })
     const text = buildQuoteText([{ input, result: quote(input) }], new Date('2026-07-22'))
     expect(text).toContain('【打样报价】2026-07-22')
-    expect(text).toContain('第1款 三边封袋 150×200mm 牛皮 / 哑面 / 异形 / 开窗(亮面) / 拉链 × 10个')
+    expect(text).toContain('第1款 三边封拉链袋 150×200mm OPP哑面 / 异形 / 开窗(亮面) × 10个')
     expect(text).toContain('10-19个 8折')
     expect(text).toContain('本款应收')
     expect(text).toContain('以上为打样费用,不含税运,最终以实际确认为准。')
@@ -340,9 +313,15 @@ describe('报价文本', () => {
     expect(text).not.toContain('元/㎡')
     expect(text).not.toContain('合计应收')
   })
+  it('开窗处光泽与整体一致时描述只写"开窗"', () => {
+    const input = base({ surface: 'PET亮面', window: true, windowSurface: '亮面', quantity: 5 })
+    const text = buildQuoteText([{ input, result: quote(input) }])
+    expect(text).toContain('PET亮面 / 开窗 ×')
+    expect(text).not.toContain('开窗(')
+  })
   it('多款出现合计', () => {
     const a = base({ quantity: 10 })
-    const b = base({ bagType: '八边封袋', gussetMm: 80, quantity: 5 })
+    const b = base({ bagType: '八边封袋(无拉链)', gussetMm: 80, quantity: 5 })
     const text = buildQuoteText([
       { input: a, result: quote(a) },
       { input: b, result: quote(b) },

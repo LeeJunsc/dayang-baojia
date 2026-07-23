@@ -2,10 +2,10 @@
  * 报价引擎:纯函数,框架无关,网页版与小程序共用。
  * 内部以"分"(cents)为整数单位计算,避免浮点误差;最终总价四舍五入到元。
  */
-import { BAG_FAMILY, RULES, spreadAreaMm2 } from './rules'
-import type { BagType, Material, Surface } from './rules'
+import { BAG_FAMILY, RULES, spreadAreaMm2, surfaceFinish } from './rules'
+import type { BagType, Finish, Surface } from './rules'
 
-export type { BagType, Material, Surface }
+export type { BagType, Finish, Surface }
 
 export interface QuoteInput {
   bagType: BagType
@@ -13,22 +13,18 @@ export interface QuoteInput {
   widthMm: number
   /** 高 mm */
   heightMm: number
-  /** 自立袋=底风琴;风琴袋/八边封袋=侧风琴;三边封袋/中封袋不使用(单位 mm) */
+  /** 自立系=底风琴;风琴袋/八边封系=侧风琴;三边封系/中封袋不使用(单位 mm) */
   gussetMm: number
   /** 单款数量 */
   quantity: number
-  /** 材质:不影响价格,仅进入报价描述 */
-  material: Material
-  /** 袋子整体表面 */
+  /** 袋子整体表面(材质+光泽) */
   surface: Surface
   /** 异形工艺(价格叠加,尺寸按外接矩形) */
   shaped: boolean
   /** 牛皮纸开窗 */
   window: boolean
-  /** 开窗处表面(仅开窗时有效) */
-  windowSurface: Surface
-  /** 拉链(不另加价,仅限规则允许的袋型) */
-  zipper: boolean
+  /** 开窗处表面光泽(仅开窗时有效;与整体光泽不一致时 +80元/个) */
+  windowSurface: Finish
   /** 嘴 */
   spout: boolean
   /** 气阀 */
@@ -81,12 +77,6 @@ function assertInput(input: QuoteInput): void {
   if (!Number.isInteger(quantity) || quantity < 1) {
     throw new QuoteInputError('数量必须是不小于1的整数')
   }
-  if (input.zipper && !RULES.zipper.allowed.includes(input.bagType)) {
-    throw new QuoteInputError(`${input.bagType}不支持拉链`)
-  }
-  if (input.window && input.material !== RULES.windowRequiresMaterial) {
-    throw new QuoteInputError(`牛皮纸开窗仅${RULES.windowRequiresMaterial}材质可选`)
-  }
 }
 
 /** 元 → 分(规则表中的单价都是整数元,直接乘100) */
@@ -116,7 +106,7 @@ export function quote(input: QuoteInput): QuoteResult {
     cents: printCents,
   })
 
-  // 复合制袋费
+  // 复合制袋费(拉链袋型同价,拉链不另加钱)
   const bagUnit = RULES.bagMaking[bagType]
   lines.push({
     label: '复合制袋费',
@@ -124,7 +114,7 @@ export function quote(input: QuoteInput): QuoteResult {
     cents: yuan(bagUnit) * quantity,
   })
 
-  // 异形工艺:制袋费基础上叠加,普通袋系60/八边封90
+  // 异形工艺:制袋费基础上叠加,普通袋系60/八边封系90
   if (input.shaped) {
     const shapedUnit = RULES.shaped[family]
     lines.push({
@@ -134,7 +124,7 @@ export function quote(input: QuoteInput): QuoteResult {
     })
   }
 
-  // 牛皮纸开窗 + 开窗处表面不一致加价
+  // 牛皮纸开窗 + 开窗处光泽与整体不一致加价
   if (input.window) {
     const windowUnit = RULES.window[family]
     lines.push({
@@ -142,22 +132,13 @@ export function quote(input: QuoteInput): QuoteResult {
       detail: `${windowUnit}元/个 × ${quantity}`,
       cents: yuan(windowUnit) * quantity,
     })
-    if (input.windowSurface !== surface) {
+    if (input.windowSurface !== surfaceFinish(surface)) {
       lines.push({
         label: `开窗处${input.windowSurface}(与整体${surface}不一致)`,
         detail: `${RULES.surfaceMismatch}元/个 × ${quantity}`,
         cents: yuan(RULES.surfaceMismatch) * quantity,
       })
     }
-  }
-
-  // 拉链:不另加价,明细中体现
-  if (input.zipper) {
-    lines.push({
-      label: '拉链',
-      detail: '不另加价',
-      cents: yuan(RULES.zipper.price) * quantity,
-    })
   }
 
   // 嘴:不足最低数量按最低数量计费

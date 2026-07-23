@@ -1,7 +1,7 @@
 /**
  * 生成发给客户的报价文本(一键复制用)。
  */
-import { RULES } from './rules'
+import { RULES, surfaceFinish } from './rules'
 import { fmtCents } from './quote'
 import type { QuoteInput, QuoteResult } from './quote'
 
@@ -16,12 +16,15 @@ function sizeText(input: QuoteInput): string {
 }
 
 function craftText(input: QuoteInput): string {
-  const parts: string[] = [input.material, input.surface]
+  const parts: string[] = [input.surface]
   if (input.shaped) parts.push('异形')
   if (input.window) {
-    parts.push(input.windowSurface === input.surface ? '开窗' : `开窗(${input.windowSurface})`)
+    parts.push(
+      input.windowSurface === surfaceFinish(input.surface)
+        ? '开窗'
+        : `开窗(${input.windowSurface})`,
+    )
   }
-  if (input.zipper) parts.push('拉链')
   if (input.spout) parts.push('嘴')
   if (input.valve) parts.push('气阀')
   return parts.join(' / ')

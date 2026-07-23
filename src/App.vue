@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { QuoteInputError, fmtCents, quote } from './engine/quote'
-import type { BagType, QuoteInput, QuoteResult, Surface } from './engine/quote'
+import type { QuoteInput, QuoteResult } from './engine/quote'
 import { buildQuoteText } from './engine/quoteText'
-import { GUSSET_KIND, MATERIALS, RULES } from './engine/rules'
+import { BAG_TYPES, FINISHES, SURFACES, gussetKind, surfaceFinish } from './engine/rules'
+import type { BagType } from './engine/rules'
 
-const bagTypes: BagType[] = ['三边封袋', '自立袋', '风琴袋', '中封袋', '八边封袋']
-const surfaces: Surface[] = ['亮面', '哑面']
+const bagTypes = BAG_TYPES
+const surfaces = SURFACES
+const finishes = FINISHES
 
 function newItem(): QuoteInput {
   return {
@@ -15,12 +17,10 @@ function newItem(): QuoteInput {
     heightMm: 200,
     gussetMm: 0,
     quantity: 1,
-    material: '透明',
-    surface: '哑面',
+    surface: 'OPP亮面',
     shaped: false,
     window: false,
-    windowSurface: '哑面',
-    zipper: false,
+    windowSurface: '亮面',
     spout: false,
     valve: false,
   }
@@ -46,35 +46,21 @@ const grandTotal = computed(() =>
 )
 
 function hasGusset(item: QuoteInput): boolean {
-  return GUSSET_KIND[item.bagType] !== 'none'
+  return gussetKind(item.bagType) !== 'none'
 }
 
 function gussetLabel(item: QuoteInput): string {
-  return GUSSET_KIND[item.bagType] === 'bottom' ? '底风琴' : '侧风琴'
-}
-
-function zipperAllowed(item: QuoteInput): boolean {
-  return RULES.zipper.allowed.includes(item.bagType)
-}
-
-function windowAllowed(item: QuoteInput): boolean {
-  return item.material === RULES.windowRequiresMaterial
-}
-
-function setMaterial(item: QuoteInput, m: (typeof MATERIALS)[number]) {
-  item.material = m
-  if (!windowAllowed(item)) item.window = false
+  return gussetKind(item.bagType) === 'bottom' ? '底风琴' : '侧风琴'
 }
 
 function setBagType(item: QuoteInput, t: BagType) {
   item.bagType = t
   if (!hasGusset(item)) item.gussetMm = 0
-  if (!zipperAllowed(item)) item.zipper = false
 }
 
 function toggleWindow(item: QuoteInput) {
   item.window = !item.window
-  if (item.window) item.windowSurface = item.surface
+  if (item.window) item.windowSurface = surfaceFinish(item.surface)
 }
 
 function bump(item: QuoteInput, delta: number) {
@@ -144,7 +130,7 @@ async function copyQuote() {
 
         <div class="field">
           <label class="field-label">袋型</label>
-          <div class="seg grid3">
+          <div class="seg grid2">
             <button
               v-for="t in bagTypes"
               :key="t"
@@ -182,22 +168,8 @@ async function copyQuote() {
         </div>
 
         <div class="field">
-          <label class="field-label">材质</label>
-          <div class="seg">
-            <button
-              v-for="m in MATERIALS"
-              :key="m"
-              :class="{ on: item.material === m }"
-              @click="setMaterial(item, m)"
-            >
-              {{ m }}
-            </button>
-          </div>
-        </div>
-
-        <div class="field">
           <label class="field-label">整体表面</label>
-          <div class="seg">
+          <div class="seg grid2">
             <button
               v-for="s in surfaces"
               :key="s"
@@ -215,21 +187,8 @@ async function copyQuote() {
             <button class="chip" :class="{ on: item.shaped }" @click="item.shaped = !item.shaped">
               异形
             </button>
-            <button
-              v-if="windowAllowed(item)"
-              class="chip"
-              :class="{ on: item.window }"
-              @click="toggleWindow(item)"
-            >
+            <button class="chip" :class="{ on: item.window }" @click="toggleWindow(item)">
               牛皮纸开窗
-            </button>
-            <button
-              v-if="zipperAllowed(item)"
-              class="chip"
-              :class="{ on: item.zipper }"
-              @click="item.zipper = !item.zipper"
-            >
-              拉链
             </button>
             <button class="chip" :class="{ on: item.spout }" @click="item.spout = !item.spout">
               嘴
@@ -242,15 +201,17 @@ async function copyQuote() {
             <span class="sublabel">开窗处表面</span>
             <div class="seg small">
               <button
-                v-for="s in surfaces"
-                :key="s"
-                :class="{ on: item.windowSurface === s }"
-                @click="item.windowSurface = s"
+                v-for="f in finishes"
+                :key="f"
+                :class="{ on: item.windowSurface === f }"
+                @click="item.windowSurface = f"
               >
-                {{ s }}
+                {{ f }}
               </button>
             </div>
-            <span v-if="item.windowSurface !== item.surface" class="mismatch">与整体不一致 +80元/个</span>
+            <span v-if="item.windowSurface !== surfaceFinish(item.surface)" class="mismatch">
+              与整体不一致 +80元/个
+            </span>
           </div>
         </div>
 
@@ -396,9 +357,9 @@ async function copyQuote() {
   font-weight: 600;
 }
 
-.seg.grid3 {
+.seg.grid2 {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
 }
 
 .seg.small button {
